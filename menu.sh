@@ -1,22 +1,31 @@
 #!/bin/bash
 
+# Muat variabel dari file .env jika ada
+if [ -f .env ]; then
+    export $(cat .env | xargs)
+fi
+
 while true; do
     clear
     echo "=============================="
     echo "    AUTO RDP SETUP MENU       "
     echo "=============================="
-    echo " [1] Otomatis Buat & Push RDP ke GitHub"
-    echo " [2] Keluar"
+    echo " [1] Otomatis Buat & Push RDP (.env)"
+    echo " [2] Buat/Edit File .env"
+    echo " [3] Keluar"
     echo "=============================="
-    read -p "Pilih menu [1-2]: " pilihan
+    read -p "Pilih menu [1-3]: " pilihan
 
     case $pilihan in
         1)
-            echo "=== Konfigurasi Otomatis RDP ==="
-            read -p "Masukkan Username GitHub Anda: " gh_user
-            read -p "Masukkan Nama Repository (misal: my-rdp): " gh_repo
-            read -p "Masukkan Personal Access Token (PAT) GitHub: " gh_token
+            if [ -z "$GH_USER" ] || [ -z "$GH_REPO" ] || [ -z "$GH_TOKEN" ]; then
+                echo "Error: Data di file .env belum lengkap!"
+                echo "Silakan pilih menu [2] terlebih dahulu untuk mengisi .env."
+                read -p "Tekan Enter untuk kembali..."
+                continue
+            fi
 
+            echo "Direktori Kerja Saat Ini: $(pwd)"
             echo "Membuat struktur folder workflow..."
             mkdir -p .github/workflows
 
@@ -78,7 +87,7 @@ EOF
             git init
             git branch -M main
             git remote remove origin 2>/dev/null
-            git remote add origin https://$gh_token@github.com/$gh_user/$gh_repo.git
+            git remote add origin https://$GH_TOKEN@github.com/$GH_USER/$GH_REPO.git
             
             git add .
             git commit -m "Auto setup RDP workflow"
@@ -86,10 +95,13 @@ EOF
 
             echo ""
             echo "Berhasil! Repository dan file workflow telah di-push."
-            echo "Silakan buka GitHub Anda, masukkan secret TAILSCALE_AUTH_KEY, lalu jalankan (trigger) workflow secara manual di tab Actions."
             read -p "Tekan Enter untuk kembali ke menu..."
             ;;
         2)
+            echo "Membuat/Mengedit file .env..."
+            nano .env
+            ;;
+        3)
             echo "Keluar..."
             exit 0
             ;;
